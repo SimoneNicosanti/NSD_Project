@@ -4,15 +4,16 @@
 
 ![Topology](images/Topology.png)
 
-
 ## Configurazioni di Rete
 
 ### AS 100
-*Nota: Le considerazioni che saranno fatte per R101 valgono anche per R102 ed R103*.
+
+_Nota: Le considerazioni che saranno fatte per R101 valgono anche per R102 ed R103_.
 
 #### R 101
 
 ##### R_101.sh
+
 ```bash
 ## To congifure VPN
 ip link add vpnA type vrf table 10
@@ -26,25 +27,33 @@ sysctl -p
 vtysh < R_101_frr.conf
 
 ```
+
 Si tratta dello script di inizializzazione:
+
 - Viene prima di tutto configurata la vpn indicando:
-	- Nome come *vpnA*
-	- Identificativo *10*
-	- Interfaccia dietro a cui si trova il Customer Edge per il sito corrispondente
+  - Nome come _vpnA_
+  - Identificativo _10_
+  - Interfaccia dietro a cui si trova il Customer Edge per il sito corrispondente
 - Si scrive la configurazione relativa ad MPLS sul file di configurazione
-- Si eseguono i comandi *vtysh*
+- Si eseguono i comandi _vtysh_
+
 ##### R_101_sysctl.conf
+
 ```
 net.mpls.conf.lo.input = 1
 net.mpls.conf.eth1.input = 1
 net.mpls.conf.vpnA.input = 1
 net.mpls.platform_labels = 100000
 ```
+
 Si tratta della configurazione di MPLS; si specificano in particolare:
+
 - Le interfacce che ricevono messaggi MPLS come input
-	- In questo caso sono eth1 per i messaggi e loopback per messaggi di LDP
+  - In questo caso sono eth1 per i messaggi e loopback per messaggi di LDP
 - Massimo numero di labels che MPLS può gestire
+
 ##### R_101_frr.conf
+
 ```
 configure terminal
 
@@ -125,27 +134,30 @@ exit
 
 
 ```
-I comandi *vtysh* possono essere divisi nelle seguenti parti:
+
+I comandi _vtysh_ possono essere divisi nelle seguenti parti:
+
 - I primi comandi sono relativi al setup degli indirizzi IP sulle interfacce del dispositivo
-	- Sull'interfaccia di loopback viene configurato un indirizzo per evitare di legare i messaggi di gestione ad una specifica interfaccia fisica; in questo modo, anche in caso di guasti la configurazione può continuare a funzionare
+  - Sull'interfaccia di loopback viene configurato un indirizzo per evitare di legare i messaggi di gestione ad una specifica interfaccia fisica; in questo modo, anche in caso di guasti la configurazione può continuare a funzionare
 - Configurazione OSPF
-	- Ricordando che OSPF è un protocollo di instradamento Intra-AS, gli unici indirizzi che possono essere condivisi da questo router con questo protocollo sono quelli dell'AS stesso, quindi quello dell'interfaccia di loopback e quello del link eth1
+  - Ricordando che OSPF è un protocollo di instradamento Intra-AS, gli unici indirizzi che possono essere condivisi da questo router con questo protocollo sono quelli dell'AS stesso, quindi quello dell'interfaccia di loopback e quello del link eth1
 - Configurazione LDP
-	- Viene configurato LDP per eseguire sulle interfacce eth1 e loopback
+  - Viene configurato LDP per eseguire sulle interfacce eth1 e loopback
 - Configurazione Internal BGP
-	- Si specifica quali sono gli altri peer (ovvero R102 ed R103) con gli indirizzi IP associati alle loro intrfacce di loopback. A questo è anche specificato la sorgente degli aggiornamenti BGP
-	- Si configurano lo scambio di informazioni di VPN
-		- Stiamo attivando la versione multiprotocollo di BGP per questi peer
+  - Si specifica quali sono gli altri peer (ovvero R102 ed R103) con gli indirizzi IP associati alle loro intrfacce di loopback. A questo è anche specificato la sorgente degli aggiornamenti BGP
+  - Si configurano lo scambio di informazioni di VPN
+    - Stiamo attivando la versione multiprotocollo di BGP per questi peer
 - Configurazione Route Distinguisher e Route Target
-	- Stiamo assegnando un certo route distinguisher alle informazioni relative alla vpnA: questo servirà per permettere agli engine BGP di distinguere spazi di indirizzamento sovrapposti in VPN diverse
-	- Impostiamo poi i Route Target per costruire la topologia voluta della VPN: accettiamo in particolare le rotte che vengono con RT 100:1 (confrontare con RT esportato dall'HUB) e esportiamo i nostri messaggi con RT 100:2 (confrontare con RT importato dall'HUB)
+  - Stiamo assegnando un certo route distinguisher alle informazioni relative alla vpnA: questo servirà per permettere agli engine BGP di distinguere spazi di indirizzamento sovrapposti in VPN diverse
+  - Impostiamo poi i Route Target per costruire la topologia voluta della VPN: accettiamo in particolare le rotte che vengono con RT 100:1 (confrontare con RT esportato dall'HUB) e esportiamo i nostri messaggi con RT 100:2 (confrontare con RT importato dall'HUB)
 - Configurazione Route Advertisement su link CE-PE
-	- Configuriamo lo scambio di informazioni di rotte relative alla VRF con il CE: stiamo in particolare esportando le rotte della VPN vpnA con il router di frontiera (CE) appartenente al AS 65001.
-	- Poiché il vicino è associato alla vrf vpnA, le rotte che da lui verranno ricevute saranno associate in automatico a questa vpn.
+  - Configuriamo lo scambio di informazioni di rotte relative alla VRF con il CE: stiamo in particolare esportando le rotte della VPN vpnA con il router di frontiera (CE) appartenente al AS 65001.
+  - Poiché il vicino è associato alla vrf vpnA, le rotte che da lui verranno ricevute saranno associate in automatico a questa vpn.
 
 #### R 102
 
 ##### R_102.sh
+
 ```bash
 ip link add vpnA type vrf table 10
 ip link set vpnA up
@@ -158,6 +170,7 @@ vtysh < R_102_frr.conf
 ```
 
 ##### R_102_sysctl.conf
+
 ```
 net.mpls.conf.lo.input = 1
 net.mpls.conf.eth1.input = 1
@@ -166,6 +179,7 @@ net.mpls.platform_labels = 100000
 ```
 
 ##### R_102_frr.conf
+
 ```
 configure terminal
 
@@ -201,7 +215,7 @@ exit
 
 ! Configuring Internal BGP
 router bgp 100
-	bgp router-id 1.255.0.2 
+	bgp router-id 1.255.0.2
 	neighbor 1.255.0.1 remote-as 100
 	neighbor 1.255.0.1 update-source 1.255.0.2
 	neighbor 1.255.0.3 remote-as 100
@@ -220,7 +234,7 @@ exit
 
 ! Configuring Route Distinguisher and Route Target
 router bgp 100 vrf vpnA
-	address-family ipv4 unicast		
+	address-family ipv4 unicast
 		label vpn export auto
 		rd vpn export 100:0
 		rt vpn import 100:2
@@ -235,9 +249,9 @@ exit
 ! ip route 192.168.2.0/24 10.1.3.2 vrf vpnA
 
 ! Dynamic Routing between CE-PE
-router bgp 100 vrf vpnA                       
-        address-family ipv4                   
-        neighbor 10.1.3.2 remote-as 65002                               
+router bgp 100 vrf vpnA
+        address-family ipv4
+        neighbor 10.1.3.2 remote-as 65002
 exit
 !
 
@@ -257,6 +271,7 @@ Oltre alla configurazione di prima, abbiamo qui anche l'esportazione di una rott
 #### R 103
 
 ##### R_103.sh
+
 ```shell
 ip link add vpnA type vrf table 10
 ip link set vpnA up
@@ -269,6 +284,7 @@ vtysh < R_103_frr.conf
 ```
 
 ##### R_103_sysctl.conf
+
 ```
 net.mpls.conf.lo.input = 1
 net.mpls.conf.eth1.input = 1
@@ -277,6 +293,7 @@ net.mpls.platform_labels = 100000
 ```
 
 ##### R_103_frr.conf
+
 ```
 configure terminal
 
@@ -343,26 +360,31 @@ router bgp 100 vrf vpnA
 	import vpn
 exit
 !
-                       
-router bgp 100 vrf vpnA                       
-        address-family ipv4                   
+
+router bgp 100 vrf vpnA
+        address-family ipv4
                 neighbor 10.1.2.2 remote-as 65003
-        exit                               
+        exit
 exit
 
 
 ```
 
 #### R 104
+
 R104 rappresenta il nostro LSR nella backbone MPLS: essendo questo un LSR non ha bisogno di essere un peer BGP perché l'instradamento verrà fatto sulla base delle label assegnate dai PE.
+
 ##### R_104.sh
+
 ```shell
 cat R_104_sysctl.conf > /etc/sysctl.conf
 sysctl -p
 
 vtysh < R_104_frr.conf
 ```
+
 ##### R_104_sysctl.conf
+
 ```
 net.mpls.conf.lo.input = 1
 net.mpls.conf.eth0.input = 1
@@ -370,14 +392,16 @@ net.mpls.conf.eth1.input = 1
 net.mpls.conf.eth2.input = 1
 net.mpls.platform_labels = 100000
 ```
+
 ##### R_104_frr.conf
+
 ```
 configure terminal
 
 interface eth0
  ip address 10.0.11.2/30
 exit
-! 
+!
 interface eth1
  ip address 10.0.11.10/30
 exit
@@ -418,14 +442,19 @@ exit
 Come già detto, in questo caso è sufficiente configurare solo il LDP: l'instradamento sarà fatto tramite label switch.
 
 ### VPN Site 1
-*Nota: La discussione fatta per CE_1, vale similmente anche per CE_2 e CE_3*
+
+_Nota: La discussione fatta per CE_1, vale similmente anche per CE_2 e CE_3_
+
 #### CE 1
+
 ##### CE_1.sh
+
 ```shell
 vtysh < CE_1_frr.conf
 ```
 
 ##### CE_1_frr.conf
+
 ```
 configure terminal
 
@@ -448,10 +477,13 @@ exit
 
 
 ```
-La parte significativa in questo caso è l'ultima parte dei comandi *vtysh*, in cui configuriamo la parte CE per BGP sul link CE-PE. Il router semplicemente configura la controparte come router di frontiera dell'AS 100 e gli invia rotte relative alla rete 192.168.0.1, che è proprio quella del sito 1 della VPN.
+
+La parte significativa in questo caso è l'ultima parte dei comandi _vtysh_, in cui configuriamo la parte CE per BGP sul link CE-PE. Il router semplicemente configura la controparte come router di frontiera dell'AS 100 e gli invia rotte relative alla rete 192.168.0.1, che è proprio quella del sito 1 della VPN.
+
 #### Client A1
 
 ##### Client_A1.sh
+
 ```shell
 ip link set enp0s3 up
 ip addr add 192.168.0.2/24 dev enp0s3
@@ -461,7 +493,9 @@ ip route add default via 192.168.0.1
 ### VPN Site 2
 
 #### CE 2
+
 ##### CE_2.sh
+
 ```
 vtysh < CE_2_frr.conf
 
@@ -471,19 +505,22 @@ ip addr add 192.168.4.1/24 dev eth0
 ip link add link eth0 name eth0.95 type vlan id 95
 ip link add link eth0 name eth0.32 type vlan id 32
 
-ip link set eth0.95 up 
-ip link set eth0.32 up 
+ip link set eth0.95 up
+ip link set eth0.32 up
 
 ip addr add 192.168.3.1/24 dev eth0.95
 ip addr add 192.168.1.1/24 dev eth0.32
 
 ```
-In questo caso oltre alla configurazione *vtysh* abbiamo anche la configurazione delle VLAN all'interno del sito 2. Nello specifico:
-- Viene associato un indirizzo IP per la comunicazione tra Router e Switch 
+
+In questo caso oltre alla configurazione _vtysh_ abbiamo anche la configurazione delle VLAN all'interno del sito 2. Nello specifico:
+
+- Viene associato un indirizzo IP per la comunicazione tra Router e Switch
 - Vengono costruite delle interfacce virtuali, ognuna associata ad una specifica VLAN e legate all'interfaccia fisica eth0 che è l'interfaccia da cui arriveranno i pacchetti delle diverse VLAN
 - Si associano degli indirizzi IP in ciascuna VLAN alle interfacce virtuali corrispondenti
 
 ##### CE_2_frr.conf
+
 ```
 configure terminal
 
@@ -507,7 +544,9 @@ exit
 ```
 
 #### Switch
+
 ##### Switch.sh
+
 ```bash
 # Creating and configuring the bridge for auth requests
 ip link add bridge type bridge
@@ -533,11 +572,15 @@ echo 8 > /sys/class/net/bridge/bridge/group_fwd_mask
 cat ./Switch_hostapd.conf > /etc/hostapd/hostapd.conf
 
 ```
+
 Passi di configurazione:
+
 - Viene costruito un bridge virtuale che sappia gestire le VLAN e gli vengo date in gestione le interfacce fisiche verso i dispositivi (non quello verso il router)
 - Viene configurata la eth2, dando un indirizzo che permetta di comunicare con il router fuori dalle VLAN
 - Vengono pulite le regole ebtables e bloccato tutto il traffico in forward: ciò significa che lo switch non farà forward di nessun pacchetto a meno che non ci sia una regola specifica a permetterlo
+
 ##### Switch_hostapd.conf
+
 ```
 # Control interface settings
 ctrl_interface=/var/run/hostapd
@@ -576,24 +619,30 @@ auth_server_port=1812
 auth_server_shared_secret=radiussecret
 
 ```
+
 Notiamo in particolare che:
+
 - L'interfaccia da cui arriveranno le richieste è quella virtuale del bridge a cui infatti sono attaccate le interface verso i client
 - L'indirizzo IP usato per inviare le richieste al server è quello che è stato configurato su eth2
 - Il server Radius usato è quello che si trova nel sito 3 della VPN
+
 #### Client B1
+
 ##### Client_B1.sh
+
 ```bash
 ip link set eth0 up
 ip addr add 192.168.1.2/24 dev eth0
 ip route add default via 192.168.1.1
- 
+
 cd
- 
+
 cat Client_B1_supplicant.conf > /etc/wpa_supplicant.conf
 
 ```
 
 ##### Client_B1_supplicant.conf
+
 ```
 ap_scan=0
 network={
@@ -607,12 +656,14 @@ network={
 ```
 
 #### Client B2
+
 ##### Client_B2.sh
+
 ```bash
 ip link set eth0 up
 ip addr add 192.168.3.2/24 dev eth0
 ip route add default via 192.168.3.1
- 
+
 cd
 
 cat Client_B2_supplicant.conf > /etc/wpa_supplicant.conf
@@ -620,6 +671,7 @@ cat Client_B2_supplicant.conf > /etc/wpa_supplicant.conf
 ```
 
 ##### Client_B2_supplicant.conf
+
 ```
 ap_scan=0
 network={
@@ -637,11 +689,13 @@ network={
 #### CE 3
 
 ##### CE_3.sh
+
 ```bash
 vtysh < CE_3_frr.conf
 ```
 
 ##### CE_3_frr.conf
+
 ```
 configure terminal
 
@@ -668,6 +722,7 @@ exit
 #### Radius Server
 
 ##### Radius.sh
+
 ```
 ip link set eth0 up
 ip addr add 192.168.2.2/24 dev eth0
@@ -681,17 +736,22 @@ cat ./Radius_users.conf > /etc/freeradius/3.0/users
 service freeradius start
 
 ```
+
 ##### Radius_clients.conf
+
 ```
 client cumulus1 {
 	ipaddr = 192.168.4.2
 	secret = "radiussecret"
-	shortname = projetc 
+	shortname = projetc
 }
 
 ```
+
 Si imposta qui l'indirizzo IP dell'authentication device da cui arriveranno le richieste: si tratta proprio dell'indirizzo dello Switch.
+
 ##### Radius_users.conf
+
 ```
 Client_B1	Cleartext-Password := "Client_B1"
 			Service-Type = Framed-User,
@@ -705,13 +765,17 @@ Client_B2	Cleartext-Password := "Client_B2"
 			Tunnel-Medium-Type = 6,
 			Tunnel-Private-Group-ID = 95
 ```
+
 Si impostano le informazioni relative agli utenti che si autenticano: notare le informazioni di VLAN che verranno aggiunte al messaggio Radius come attributi in caso di successo.
 
 ## Configurazione di Sistema
 
 ### App Armor in Client A1
+I profili di seguito sono stati generati usando lo strumento `aa-genprof`.
 
 #### Profilo FTP
+
+PRIMO PROFILO
 ```
 # Last Modified: Wed Feb  5 15:47:59 2025
 abi <abi/3.0>,
@@ -727,13 +791,31 @@ include <tunables/global>
   /etc/passwd r,
   /usr/bin/tnftp mr,
   owner /proc/*/loginuid r,
-  
+
   deny network,
 }
 
 ```
 
+SECONDO PROFILO
+```
+# Last Modified: Wed Feb  5 15:47:59 2025
+abi <abi/3.0>,
+
+include <tunables/global>
+
+/usr/bin/tnftp {
+  include <abstractions/apache2-common>
+  include <abstractions/base>
+  include <abstractions/bash>
+
+  /usr/bin/tnftp mr,
+  deny network,
+}
+
+```
 #### Profilo Telnet
+
 ```
 # Last Modified: Tue Feb  4 19:11:26 2025
 abi <abi/3.0>,
@@ -752,6 +834,7 @@ include <tunables/global>
 #### Codice e Profilo my_cat
 
 ##### Codice my_cat
+
 ```
 #!/usr/bin/python3
 import sys
@@ -776,27 +859,25 @@ if __name__ == "__main__":
 
 ##### Profilo my_cat
 ```
-#include <tunables/global>
+# Last Modified: Sun Feb  9 21:07:00 2025
+include <tunables/global>
 
 profile /home/simone/my_cat flags=(enforce) {
-
-  /home/simone/my_cat r,
-  /home/simone/my_cat ux,
-
-  # Allow read access to required libraries
   include <abstractions/base>
   include <abstractions/python>
 
-  # Allow execution of the Python interpreter
-  /usr/bin/python3 rmix,
-
-  # Allow read access to specific directories
   /home/simone/allowed_dir/** r,
+  /home/simone/my_cat r,
+  /home/simone/my_cat ux,
+  /usr/bin/python3 mrix,
 
 }
+
 ```
 
+L'unico accesso consentito in lettura è quello alla directory `allowed_dir`, mentre di default l'accesso è bloccato a tutte le altre directory.
 #### update_profiles.sh
+
 ```
 ## MY_CAT
 cat my_cat_profile > /etc/apparmor.d/home.simone.my_cat
@@ -827,10 +908,10 @@ fi
 
 ```
 
-
 ## Configurazione Switch eBPF
 
 ### xdp-tutorial/project/Makefile
+
 ```
 # SPDX-License-Identifier: (GPL-2.0 OR BSD-2-Clause)
 
@@ -845,6 +926,7 @@ include $(COMMON_DIR)/common.mk
 ```
 
 ### xdp-tutorial/project/xdp_radius_kern.c
+
 ```c
 #include <linux/bpf.h>
 #include <linux/if_ether.h>
@@ -999,11 +1081,8 @@ static int parse_radius_attributes(struct radius_hdr *radius_hdr, void *data_end
 }
 
 static int check_is_radius(struct udphdr *udp, void *data_end) {
-    // Check if the destination port is RADIUS
+    // Check if the source port is RADIUS    
     if (udp->source == __constant_htons(RADIUS_PORT))
-        return true;
-    
-    if (udp->dest == __constant_htons(RADIUS_PORT))
         return true;
     
     return false;
@@ -1064,6 +1143,7 @@ char _license[] SEC("license") = "GPL";
 ```
 
 ### xdp-tutorial/project/xdp_eap_kern.c
+
 ```c
 #include <linux/bpf.h>
 #include <linux/if_ether.h>
@@ -1082,6 +1162,7 @@ char _license[] SEC("license") = "GPL";
 #define EAP_PACKET_TYPE 0
 #define EAP_RESPONSE_CODE 2
 #define EAP_MD5_CHALLENGE_TYPE 4
+#define EAP_START_TYPE 1
 
 #define CONTINUE_PROCESS -1
 
@@ -1095,7 +1176,6 @@ struct eap_payload {
     __u8 type;
 } ;
 
-
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
     __type(key, __u8);
@@ -1103,6 +1183,8 @@ struct {
     __uint(max_entries, MAP_ENTRIES_NUM);
     __uint(pinning, LIBBPF_PIN_BY_NAME);
 } eap_map SEC(".maps");
+
+static __u8 is_pending = 0 ;
 
 
 static __always_inline __u8 is_access_save(void *start, __u64 size, void *end) {
@@ -1129,6 +1211,11 @@ static int check_and_parse(void *data, void *data_end, __u8 *eap_id, __u8 **eth_
         return XDP_DROP ;
     }
 
+    // We set a pending request on this interface
+    if (auth->type == EAP_START_TYPE) {
+        is_pending = 1 ;
+    }
+
     if (auth->type != EAP_PACKET_TYPE) {
         return XDP_PASS ;
     }
@@ -1142,6 +1229,12 @@ static int check_and_parse(void *data, void *data_end, __u8 *eap_id, __u8 **eth_
         return XDP_PASS ;
     }
 
+    // If there is no pending request on this interface, we drop the request
+    // This may be because of the EAPoL Forwarding
+    if (!is_pending) {
+        return XDP_DROP ;
+    }
+
     struct eap_payload *eap_pay = (struct eap_payload *)(eap + 1) ;
     if (!is_access_save(eap_pay, sizeof(struct eap_payload), data_end)) {
         return XDP_DROP ;
@@ -1152,6 +1245,9 @@ static int check_and_parse(void *data, void *data_end, __u8 *eap_id, __u8 **eth_
 
     *eap_id = eap->id ;
     *eth_src = eth->h_source;
+
+    // Request is no longer pendant
+    is_pending = 0 ;
 
     return CONTINUE_PROCESS;
 }
@@ -1189,9 +1285,11 @@ char _license[] SEC("license") = "GPL";
 ```
 
 ### xdp-tutorial/project/xdp_loader.c
-Si tratta di una copia del loader generico fornito da *xdp-tutorial*. Per evitare di appesantire il file il suo codice non viene riportato.
 
-### xdp-tutorial/project/xdp_loader.c
+Si tratta di una copia del loader generico fornito da _xdp-tutorial_. Per evitare di appesantire il file il suo codice non viene riportato.
+
+### xdp-tutorial/project/xdp_user.c
+
 ```c
 #include <bpf/bpf.h>
 #include <stdio.h>
@@ -1234,11 +1332,34 @@ int run_command(char *command) {
     return system(command) ;
 }
 
-int allow_traffic(char *src_mac) {
+int allow_traffic(char *src_mac, char *vlan_id) {
     char command[COMMAND_MAX_LENGTH] ;
+    int check_code ; // It will be 0 in case of success i.e. a rule already exists
 
-    snprintf(command, COMMAND_MAX_LENGTH - 1, "ebtables -A FORWARD -s %s -j ACCEPT", src_mac) ;
-    run_command(command) ;
+    // Checking if a rule for mac exists
+    snprintf(command, COMMAND_MAX_LENGTH - 1, "ebtables -L | grep -q -i %s", src_mac) ;
+    check_code = run_command(command) ;
+    if (check_code != 0) {
+        // Allowing traffic forwarding for this client
+        snprintf(command, COMMAND_MAX_LENGTH - 1, "ebtables -A FORWARD -s %s -d ! 01:80:c2:00:00:03 -j ACCEPT", src_mac) ;
+        run_command(command) ;
+    } else {
+        printf("\t\t>> Rule Exists\n") ;
+    }
+
+    snprintf(command, COMMAND_MAX_LENGTH - 1, "ebtables -L | grep -q -i eth2.%s", vlan_id) ;
+    check_code = run_command(command) ;
+    if (check_code != 0) {
+        // Allowing traffic forwarding if coming to VLAN interface
+        snprintf(command, COMMAND_MAX_LENGTH - 1, "ebtables -A FORWARD -i eth2.%s -j ACCEPT", vlan_id) ;
+        run_command(command) ;
+
+        snprintf(command, COMMAND_MAX_LENGTH - 1, "ebtables -A OUTPUT -o eth2.%s -d 01:80:c2:00:00:03 -j DROP", vlan_id) ;
+        run_command(command) ;
+    } else {
+        printf("\t\t>> Rule Exists\n") ;
+    }
+
     return 0 ;
 }
 
@@ -1258,13 +1379,13 @@ int configure_vlan(char *itf_name, char *vlan_id) {
     run_command(command) ;
 
     // Configuring vlan ports on the bridge
-    snprintf(command, COMMAND_MAX_LENGTH - 1, "bridge vlan add dev eth2.%s vid %s pvid %s untagged", vlan_id, vlan_id, vlan_id);
+    snprintf(command, COMMAND_MAX_LENGTH - 1, "bridge vlan add dev eth2.%s vid %s pvid untagged", vlan_id, vlan_id);
     run_command(command) ;
-    snprintf(command, COMMAND_MAX_LENGTH - 1, "bridge vlan add dev %s vid %s pvid %s untagged", itf_name, vlan_id, vlan_id);
+    snprintf(command, COMMAND_MAX_LENGTH - 1, "bridge vlan add dev %s vid %s pvid untagged", itf_name, vlan_id);
     run_command(command) ;
 
-    // Allowing traffic coming to VLAN interface
-    snprintf(command, COMMAND_MAX_LENGTH - 1, "ebtables -A FORWARD -i eth2.%s -j ACCEPT", vlan_id) ;
+    // Configuring bridge as belonging to vlan --> Can receive messages as input
+    snprintf(command, COMMAND_MAX_LENGTH - 1, "bridge vlan add dev bridge vid %s self", vlan_id);
     run_command(command) ;
 
     return 0 ;
@@ -1303,14 +1424,13 @@ int main() {
 
                 printf("(User %s, VLAN %s, Itf Idx %d, Itf Name %s, MAC %s)\n", vlan_info.user_id, vlan_info.vlan_id, mac_info.origin_itf, itf_name, string_mac);
                 
-                allow_traffic(string_mac) ;
                 configure_vlan(itf_name, vlan_info.vlan_id) ;
+                allow_traffic(string_mac, vlan_info.vlan_id) ;
             } else {
                 printf("One entry is invalid\n") ;
             }
             printf("----------------------------------------------------------------\n") ;
         }
-        sleep(2);
     }
     
     return 0;
@@ -1318,6 +1438,7 @@ int main() {
 ```
 
 ### xdp-tutorial/project/xdp_common.c
+
 ```c
 #include <linux/bpf.h>
 #include <linux/if_ether.h>
@@ -1339,13 +1460,14 @@ struct mac_info {
     __u32 origin_itf ;
 } ;
 
-struct vlan_info { 
+struct vlan_info {
     char user_id[MAP_FIELD_LENGTH] ;
     char vlan_id[MAP_FIELD_LENGTH] ;
 };
 ```
 
 ### load_xdp_program.sh
+
 ```sh
 ip link set eth0 xdp off
 ip link set eth1 xdp off
@@ -1370,7 +1492,7 @@ echo "#################### Loading on eth2 ####################"
 echo "#########################################################"
 
 echo
-echo 
+echo
 echo "##################### Starting User #####################"
 ./xdp_user
 
@@ -1378,33 +1500,59 @@ cd
 ```
 
 ### Considerazioni
-Ci sono due programmi xdp che vengono caricati:
-- Il programma caricato su eth1 e eth0 per intercettare e parsare i messaggi EAP che vengono dal client. Da questi messaggi vengono estratte le seguenti informazioni:
-	- Indirizzo MAC del supplicant (per abilitare il forward in ebtables)
-	- Interfaccia di arrivo del messaggi (per la successiva configurazione della VLAN su quella porta)
-	- L'ID del messaggio EAP (per associare la risposta Radius corrispondente)
-- Il programma caricato su eth2 per intercettare e parsare i messaggi Radius che vengono dal Radius Server. Da questi messaggi vengono estratti:
-	- L'ID del messaggio EAP
-	- L'identificativo della VLAN
 
-Abbiamo quindi due mappe:
-- EAP Map
-	- Key: EAP Message ID
-	- Value: (Mac Addr, Origin Itf)
-- Radius Map
-	- Key: EAP Message ID
-	- Value: (User ID, VLAN ID)
+#### xdp_eap_kern.c
+Il programma viene caricato su ciascuna delle interfacce da cui arrivano le richieste (nel nostro caso eth0 ed eth1).
 
-Queste informazioni sono messe in due mappe pinnate nel sistema; in una mappa vengono messe le informazioni estratte dai messaggi EAP, mentre in un'altra le informazioni estratte dai messaggi Radius. La chiave usata è l'ID dei messaggi EAP.
+Il programma si occupa di intercettare i messaggi EAP che arrivano dai supplicant al fine di recuperare informazioni necessarie alla configurazione della VLAN e al consense del traffico. Le informazioni che sono recuperate in questo caso sono:
+- Interfaccia di arrivo della richiesta
+- Indirizzo MAC del supplicant
+- Identificativo del messaggio EAP
+Nello specifico, queste informazioni vengono recuperate per il messaggio di Response MD5: il motivo è che le informazioni del messaggio EAP (e in particolare l'ID) coincidono con quelle del messaggio EAP inserito nel messaggio di Success ricevuto dal Radius Server. L'estrazione dell'identificativo serve quindi a fare da raccordo tra supplicant e messaggi di autenticazione avvenuta con successo.
+Queste informazioni vengono usate per popolare una mappa di richieste EAP con chiave l'ID del messaggio EAP.
 
-Il processo User legge e cancella dalla mappa Radius le informazioni di un client che si è autenticato con successo, ottenendo quindi l'ID del messaggio EAP; con questo valore viene poi estratto il valore corrispondente nella mappa EAP. Da cui quindi il programma ha la tupla (Mac Addr, Origin Itf, User ID, VLAN ID) che viene usata per configurare la VLAN; nello specifico:
-1. Viene creata un'interfaccia virtuale su eth2 associata alla VLAN in questione
-2. Questa interfaccia virtuale viene collegata al Bridge
-	1. Viene impostata come untagged e associata alla VLAN sul bridge (viene configurata untagged perché il traffico è taggato dall'interfaccia stessa)
-3. L'interfaccia di origine viene associata alla VLAN di appartenenza con traffico untagged
-4. Viene permesso il forwarding del traffico
-	1. Proveniente dal dispositivo autenticato tramite il suo MAC
-	2. Proveniente dall'interfaccia virtuale creata per far passare l'eventuale traffico di risposta
+Tra le variabili usate dal programma troviamo la variabile *is_pending*. Si tratta di una variabile usata dal programma per verificare che su quell'interfaccia vi sia davvero una richiesta in attesa di elaborazione. Nello specifico è possibile che si verifichi la seguente situazione:
+1. Supponiamo che un client C1 si sia autenticato precedentemente e che il suo programma supplicant sia ancora attivo
+2. Un altro client C2 fa partire la procedura di autenticazione
+3. Come si può vedere nella  [Configurazione del Bridge](#Switch.sh), le richieste EAPoL vengono inoltrate su tutte le interfacce del bridge quindi anche su quella del dispositivo C1
+4. A questo punto se il dispositivo C1 è più veloce nelle risposte, potrebbe autenticarsi di nuovo e creare delle incongruenze nelle associazioni porta-VLAN.
+Usando questa variabile se si riceve una risposta EAP su un'interfaccia per la quale non c'è una richiesta in attesa, allora la risposta viene scartata.
 
-La situazione dopo l'autenticazione di entrambi i dispositivi sarà quella rappresentata nella figura in seguito. Il traffico proveniente da un dispositivo sarà inoltrato solo sulle porte della stessa VLAN; quando è destinato ad un dispositivo non nella stessa VLAN, allora uscirà attraverso l'interfaccia eth2.vlan_id: l'interfaccia virtuale si occuperà di taggarlo. Una volta taggato il traffico uscirà dall'interfaccia fisica eth2 per andare al router: a sua volta il router gestirà o un cambio di etichetta (nel caso la destinazione si trovi nello stesso sito) o inoltrerà il pacchetto all'hub (nel caso la destinazione si trovi in un sito diverso).
+#### xdp_radius_kern.c
+Il programma viene attivato sull'interfaccia tramite cui si comunica con il server Radius (nel nostro caso eth2).
+
+Il programma verifica che il messaggio ricevuto sia un messaggio di Authentication Success e ne estrae gli attributi significativi, cioè:
+- Identificativo del messaggio EAP corrispondente
+- VLAN ID
+- Client Name
+Queste informazioni vengono aggiunte in una mappa di richieste Radius con chiave l'ID del messaggio EAP.
+
+#### xdp_user.c
+Il programma esegue a livello utente.
+
+In un ciclo infinito:
+5. si estrae dalla mappa Radius la "prossima" chiave (cioè l'ID del messaggio EAP di un messaggio Auth Success)
+6. La chiave viene usata per estrarre (e contestualmente cancellare) da entrambe le mappe le informazioni necessarie: a questo punto abbiamo la tupla (UserName, MAC Addr, Interface, VLAN ID)
+7. Usando la tupla detta, si eseguono i comandi per impostare la VLAN
+
+I comandi che attivano la VLAN possono essere divisi come segue:
+8. Viene creata un'interfaccia virtuale su eth2 associata alla VLAN 
+9. L'interfaccia virtuale viene collegata al bridge, associando alla porta l'ID della VLAN
+10. L'interfaccia di arrivo viene associata la VLAN
+11. Anche il bridge viene assegnato alla VLAN. Questo permette di ricevere altri messaggi di autenticazione sulla stessa porta (più per debugging che per altro)
+In figura seguente viene mostrato uno schema della situazione delle interfacce prima e dopo l'autenticazione di entrambi i dispositivi. Per quanto riguarda i tag e l'untag dei messaggi:
+12. Quando C2 invia il messaggi, questo viene taggato dal bridge con TAG_95
+13. Il messaggio viene poi inoltrato sulle porte con lo stesso tag
+	1. Sia eth2.95 sia il bridge stesso
+14. Quando il messaggio esce dalla porta di eth2.95, il bridge toglie il tag, visto che la porta è configurata come untag
+15. L'interfaccia virtuale inserisce di nuovo il tag e manda il messaggio taggato su eth2
+Per messaggi in arrivo il percorso è l'esatto inverso.
+
+
 ![My Image](images/Bridge.png)
+
+I comandi di attivazione del traffico si possono dividere come segue:
+1. Viene abilitato il forward per tutto il traffico proveniente dal dispositivo, ad eccezione di quello destinato all'indirizzo di default usato per i messaggi EAP: questo permette di evitare il forward dei messaggi di autenticazione che provengono da quel dispositivo sulle altre interfacce della VLAN
+2. Viene abilitato il traffico sull'interfaccia taggata, in modo da permettere il traffico di ritorno
+3. Viene bloccato il traffico di output sull'interfaccia taggata e con destinazione il MAC di default per i messaggi EAP
+In questo modo tutti i messaggi vengono inoltrati su eth2 tranne quelli per l'autenticazione che si fermano nello switch.
