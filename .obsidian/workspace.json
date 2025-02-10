@@ -78,8 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 226.5,
-    "collapsed": true
+    "width": 226.5
   },
   "right": {
     "id": "9010f13c678f2c97",
@@ -172,8 +171,13 @@
   "active": "3541328420e1468d",
   "lastOpenFiles": [
     "images/Bridge.png",
-    "images/Topology.png",
     "README.md",
+    "images/lu9677z36o.tmp",
+    "doc/lu9677z36k.tmp",
+    "images/Bridge_2.png",
+    "images/lu9250ta3v.tmp",
+    "doc/lu9250ta3r.tmp",
+    "images/Topology.png",
     "images/lu80477b41fr.tmp",
     "doc/Bridge.odg",
     "doc/lu80477b41fn.tmp",

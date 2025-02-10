@@ -1511,7 +1511,7 @@ Il programma si occupa di intercettare i messaggi EAP che arrivano dai supplican
 Nello specifico, queste informazioni vengono recuperate per il messaggio di Response MD5: il motivo è che le informazioni del messaggio EAP (e in particolare l'ID) coincidono con quelle del messaggio EAP inserito nel messaggio di Success ricevuto dal Radius Server. L'estrazione dell'identificativo serve quindi a fare da raccordo tra supplicant e messaggi di autenticazione avvenuta con successo.
 Queste informazioni vengono usate per popolare una mappa di richieste EAP con chiave l'ID del messaggio EAP.
 
-Tra le variabili usate dal programma troviamo la variabile *is_pending*. Si tratta di una variabile usata dal programma per verificare che su quell'interfaccia vi sia davvero una richiesta in attesa di elaborazione. Nello specifico è possibile che si verifichi la seguente situazione:
+Tra le variabili usate dal programma troviamo la variabile *is_pending*. Si tratta di una variabile usata per verificare che su quell'interfaccia vi sia davvero una richiesta in attesa di elaborazione. Nello specifico è possibile che si verifichi la seguente situazione:
 1. Supponiamo che un client C1 si sia autenticato precedentemente e che il suo programma supplicant sia ancora attivo
 2. Un altro client C2 fa partire la procedura di autenticazione
 3. Come si può vedere nella  [Configurazione del Bridge](#Switch.sh), le richieste EAPoL vengono inoltrate su tutte le interfacce del bridge quindi anche su quella del dispositivo C1
@@ -1539,7 +1539,8 @@ I comandi che attivano la VLAN possono essere divisi come segue:
 8. Viene creata un'interfaccia virtuale su eth2 associata alla VLAN 
 9. L'interfaccia virtuale viene collegata al bridge, associando alla porta l'ID della VLAN
 10. L'interfaccia di arrivo viene associata la VLAN
-11. Anche il bridge viene assegnato alla VLAN. Questo permette di ricevere altri messaggi di autenticazione sulla stessa porta (più per debugging che per altro)
+11. Anche il bridge viene assegnato alla VLAN. Questo permette di ricevere altri messaggi di autenticazione sulla stessa porta (più per debugging che per altro)  
+
 In figura seguente viene mostrato uno schema della situazione delle interfacce prima e dopo l'autenticazione di entrambi i dispositivi. Per quanto riguarda i tag e l'untag dei messaggi:
 12. Quando C2 invia il messaggi, questo viene taggato dal bridge con TAG_95
 13. Il messaggio viene poi inoltrato sulle porte con lo stesso tag
@@ -1554,5 +1555,5 @@ Per messaggi in arrivo il percorso è l'esatto inverso.
 I comandi di attivazione del traffico si possono dividere come segue:
 1. Viene abilitato il forward per tutto il traffico proveniente dal dispositivo, ad eccezione di quello destinato all'indirizzo di default usato per i messaggi EAP: questo permette di evitare il forward dei messaggi di autenticazione che provengono da quel dispositivo sulle altre interfacce della VLAN
 2. Viene abilitato il traffico sull'interfaccia taggata, in modo da permettere il traffico di ritorno
-3. Viene bloccato il traffico di output sull'interfaccia taggata e con destinazione il MAC di default per i messaggi EAP
+3. Viene bloccato il traffico di output sull'interfaccia taggata con destinazione il MAC di default per i messaggi EAP
 In questo modo tutti i messaggi vengono inoltrati su eth2 tranne quelli per l'autenticazione che si fermano nello switch.
