@@ -771,11 +771,13 @@ Si impostano le informazioni relative agli utenti che si autenticano: notare le 
 ## Configurazione di Sistema
 
 ### App Armor in Client A1
+
 I profili di seguito sono stati generati usando lo strumento `aa-genprof`.
 
 #### Profilo FTP
 
 PRIMO PROFILO
+
 ```
 # Last Modified: Wed Feb  5 15:47:59 2025
 abi <abi/3.0>,
@@ -798,6 +800,7 @@ include <tunables/global>
 ```
 
 SECONDO PROFILO
+
 ```
 # Last Modified: Wed Feb  5 15:47:59 2025
 abi <abi/3.0>,
@@ -814,6 +817,7 @@ include <tunables/global>
 }
 
 ```
+
 #### Profilo Telnet
 
 ```
@@ -858,6 +862,7 @@ if __name__ == "__main__":
 ```
 
 ##### Profilo my_cat
+
 ```
 # Last Modified: Sun Feb  9 21:07:00 2025
 include <tunables/global>
@@ -876,6 +881,7 @@ profile /home/simone/my_cat flags=(enforce) {
 ```
 
 L'unico accesso consentito in lettura è quello alla directory `allowed_dir`, mentre di default l'accesso è bloccato a tutte le altre directory.
+
 #### update_profiles.sh
 
 ```
@@ -910,7 +916,7 @@ fi
 
 ## Configurazione Switch eBPF
 
-### xdp-tutorial/project/Makefile
+### Makefile
 
 ```
 # SPDX-License-Identifier: (GPL-2.0 OR BSD-2-Clause)
@@ -925,7 +931,7 @@ include $(COMMON_DIR)/common.mk
 
 ```
 
-### xdp-tutorial/project/xdp_radius_kern.c
+### xdp_radius_kern.c
 
 ```c
 #include <linux/bpf.h>
@@ -939,7 +945,7 @@ include $(COMMON_DIR)/common.mk
 
 #include "./xdp_common.h"
 
-#include <stdbool.h> 
+#include <stdbool.h>
 
 #define RADIUS_PORT 1812
 #define RADIUS_MAX_LENGTH 4096
@@ -961,10 +967,10 @@ include $(COMMON_DIR)/common.mk
 
 
 struct radius_hdr {
-    __u8 code;                  
-    __u8 identifier;            
-    __u16 length;               
-    __u8 authenticator[16];     
+    __u8 code;
+    __u8 identifier;
+    __u16 length;
+    __u8 authenticator[16];
 };
 
 struct radius_attr_info {
@@ -987,7 +993,7 @@ static __always_inline __u8 is_access_save(void *start, __u64 size, void *end) {
         return false ;
     }
     return true ;
-} 
+}
 
 
 static int check_packet_headers(void *data, void *data_end, struct udphdr **udp_pack) {
@@ -997,7 +1003,7 @@ static int check_packet_headers(void *data, void *data_end, struct udphdr **udp_
     // Ensure Ethernet header is within bounds
     if (!is_access_save(eth, sizeof(struct ethhdr), data_end))
         return XDP_DROP;
-        
+
     // Check if the packet is IPv4
     if (eth->h_proto != __constant_htons(ETH_P_IP)) {
         return XDP_PASS;
@@ -1019,7 +1025,7 @@ static int check_packet_headers(void *data, void *data_end, struct udphdr **udp_
     // Ensure UDP header is within bounds
     if (!is_access_save(udp, sizeof(struct udphdr), data_end))
         return XDP_DROP;
-    
+
     *udp_pack = udp;
 
     return CONTINUE_PROCESS;
@@ -1035,7 +1041,7 @@ static int parse_radius_attributes(struct radius_hdr *radius_hdr, void *data_end
     struct vlan_info vlan = {"\0", "\0"};
     struct eap_hdr eap = {0, 0, 0} ;
     for (int i = 0 ; i < RADIUS_MAX_ATTRIBUTES_NUM ; i++) {
-        if (!is_access_save(curr_attr_info, 0, data_end)) 
+        if (!is_access_save(curr_attr_info, 0, data_end))
             break ;
         if (!is_access_save(curr_attr_info, sizeof(curr_attr_info), data_end))
             break ;
@@ -1081,10 +1087,10 @@ static int parse_radius_attributes(struct radius_hdr *radius_hdr, void *data_end
 }
 
 static int check_is_radius(struct udphdr *udp, void *data_end) {
-    // Check if the source port is RADIUS    
+    // Check if the source port is RADIUS
     if (udp->source == __constant_htons(RADIUS_PORT))
         return true;
-    
+
     return false;
 }
 
@@ -1093,9 +1099,9 @@ static int check_radius_packet(struct udphdr *udp, void *data_end, struct radius
     struct radius_hdr *radius_hdr = (struct radius_hdr *)(udp + 1);
 
     // Check RADIUS header bounds
-    if (!is_access_save(radius_hdr, sizeof(struct radius_hdr), data_end)) 
+    if (!is_access_save(radius_hdr, sizeof(struct radius_hdr), data_end))
         return XDP_DROP;
-    
+
     *radius = radius_hdr ;
 
     return CONTINUE_PROCESS;
@@ -1119,7 +1125,7 @@ int xdp_parse_radius(struct xdp_md *ctx) {
     if (!is_radius) {
         return XDP_PASS;
     }
-    
+
     struct radius_hdr *radius_hdr = NULL;
     action = check_radius_packet(udp_pack, data_end, &radius_hdr);
     if (action != CONTINUE_PROCESS) {
@@ -1142,7 +1148,7 @@ char _license[] SEC("license") = "GPL";
 
 ```
 
-### xdp-tutorial/project/xdp_eap_kern.c
+### xdp_eap_kern.c
 
 ```c
 #include <linux/bpf.h>
@@ -1154,7 +1160,7 @@ char _license[] SEC("license") = "GPL";
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_core_read.h>
 
-#include <stdbool.h> 
+#include <stdbool.h>
 
 #include "./xdp_common.h"
 
@@ -1192,7 +1198,7 @@ static __always_inline __u8 is_access_save(void *start, __u64 size, void *end) {
         return false ;
     }
     return true ;
-} 
+}
 
 
 static int check_and_parse(void *data, void *data_end, __u8 *eap_id, __u8 **eth_src) {
@@ -1200,7 +1206,7 @@ static int check_and_parse(void *data, void *data_end, __u8 *eap_id, __u8 **eth_
     // Ensure Ethernet header is within bounds
     if (!is_access_save(eth, sizeof(struct ethhdr), data_end))
         return XDP_DROP;
-        
+
     // Check if the packet is 802.1x
     if (eth->h_proto != __constant_htons(ETH_P_8021X)) {
         return XDP_PASS;
@@ -1284,11 +1290,11 @@ char _license[] SEC("license") = "GPL";
 
 ```
 
-### xdp-tutorial/project/xdp_loader.c
+### xdp_loader.c
 
 Si tratta di una copia del loader generico fornito da _xdp-tutorial_. Per evitare di appesantire il file il suo codice non viene riportato.
 
-### xdp-tutorial/project/xdp_user.c
+### xdp_user.c
 
 ```c
 #include <bpf/bpf.h>
@@ -1423,7 +1429,7 @@ int main() {
                 itf_index_to_name(mac_info.origin_itf, itf_name, sizeof(itf_name)) ;
 
                 printf("(User %s, VLAN %s, Itf Idx %d, Itf Name %s, MAC %s)\n", vlan_info.user_id, vlan_info.vlan_id, mac_info.origin_itf, itf_name, string_mac);
-                
+
                 configure_vlan(itf_name, vlan_info.vlan_id) ;
                 allow_traffic(string_mac, vlan_info.vlan_id) ;
             } else {
@@ -1432,12 +1438,12 @@ int main() {
             printf("----------------------------------------------------------------\n") ;
         }
     }
-    
+
     return 0;
 }
 ```
 
-### xdp-tutorial/project/xdp_common.c
+### xdp_common.c
 
 ```c
 #include <linux/bpf.h>
@@ -1501,59 +1507,69 @@ cd
 
 ### Considerazioni
 
-#### xdp_eap_kern.c
+#### About xdp_eap_kern.c
+
 Il programma viene caricato su ciascuna delle interfacce da cui arrivano le richieste (nel nostro caso eth0 ed eth1).
 
 Il programma si occupa di intercettare i messaggi EAP che arrivano dai supplicant al fine di recuperare informazioni necessarie alla configurazione della VLAN e al consense del traffico. Le informazioni che sono recuperate in questo caso sono:
+
 - Interfaccia di arrivo della richiesta
 - Indirizzo MAC del supplicant
 - Identificativo del messaggio EAP
-Nello specifico, queste informazioni vengono recuperate per il messaggio di Response MD5: il motivo è che le informazioni del messaggio EAP (e in particolare l'ID) coincidono con quelle del messaggio EAP inserito nel messaggio di Success ricevuto dal Radius Server. L'estrazione dell'identificativo serve quindi a fare da raccordo tra supplicant e messaggi di autenticazione avvenuta con successo.
-Queste informazioni vengono usate per popolare una mappa di richieste EAP con chiave l'ID del messaggio EAP.
+  Nello specifico, queste informazioni vengono recuperate per il messaggio di Response MD5: il motivo è che le informazioni del messaggio EAP (e in particolare l'ID) coincidono con quelle del messaggio EAP inserito nel messaggio di Success ricevuto dal Radius Server. L'estrazione dell'identificativo serve quindi a fare da raccordo tra supplicant e messaggi di autenticazione avvenuta con successo.
+  Queste informazioni vengono usate per popolare una mappa di richieste EAP con chiave l'ID del messaggio EAP.
 
-Tra le variabili usate dal programma troviamo la variabile *is_pending*. Si tratta di una variabile usata per verificare che su quell'interfaccia vi sia davvero una richiesta in attesa di elaborazione. Nello specifico è possibile che si verifichi la seguente situazione:
+Tra le variabili usate dal programma troviamo la variabile _is_pending_. Si tratta di una variabile usata per verificare che su quell'interfaccia vi sia davvero una richiesta in attesa di elaborazione. Nello specifico è possibile che si verifichi la seguente situazione:
+
 1. Supponiamo che un client C1 si sia autenticato precedentemente e che il suo programma supplicant sia ancora attivo
 2. Un altro client C2 fa partire la procedura di autenticazione
-3. Come si può vedere nella  [Configurazione del Bridge](#Switch.sh), le richieste EAPoL vengono inoltrate su tutte le interfacce del bridge quindi anche su quella del dispositivo C1
+3. Come si può vedere nella [Configurazione del Bridge](#Switch.sh), le richieste EAPoL vengono inoltrate su tutte le interfacce del bridge quindi anche su quella del dispositivo C1
 4. A questo punto se il dispositivo C1 è più veloce nelle risposte, potrebbe autenticarsi di nuovo e creare delle incongruenze nelle associazioni porta-VLAN.
-Usando questa variabile se si riceve una risposta EAP su un'interfaccia per la quale non c'è una richiesta in attesa, allora la risposta viene scartata.
+   Usando questa variabile se si riceve una risposta EAP su un'interfaccia per la quale non c'è una richiesta in attesa, allora la risposta viene scartata.
 
-#### xdp_radius_kern.c
+#### About xdp_radius_kern.c
+
 Il programma viene attivato sull'interfaccia tramite cui si comunica con il server Radius (nel nostro caso eth2).
 
 Il programma verifica che il messaggio ricevuto sia un messaggio di Authentication Success e ne estrae gli attributi significativi, cioè:
+
 - Identificativo del messaggio EAP corrispondente
 - VLAN ID
 - Client Name
-Queste informazioni vengono aggiunte in una mappa di richieste Radius con chiave l'ID del messaggio EAP.
+  Queste informazioni vengono aggiunte in una mappa di richieste Radius con chiave l'ID del messaggio EAP.
 
-#### xdp_user.c
+#### About xdp_user.c
+
 Il programma esegue a livello utente.
 
 In un ciclo infinito:
-5. si estrae dalla mappa Radius la "prossima" chiave (cioè l'ID del messaggio EAP di un messaggio Auth Success)
-6. La chiave viene usata per estrarre (e contestualmente cancellare) da entrambe le mappe le informazioni necessarie: a questo punto abbiamo la tupla (UserName, MAC Addr, Interface, VLAN ID)
-7. Usando la tupla detta, si eseguono i comandi per impostare la VLAN
+
+1. si estrae dalla mappa Radius la "prossima" chiave (cioè l'ID del messaggio EAP di un messaggio Auth Success)
+2. La chiave viene usata per estrarre (e contestualmente cancellare) da entrambe le mappe le informazioni necessarie: a questo punto abbiamo la tupla (UserName, MAC Addr, Interface, VLAN ID)
+3. Usando la tupla detta, si eseguono i comandi per impostare la VLAN
 
 I comandi che attivano la VLAN possono essere divisi come segue:
-8. Viene creata un'interfaccia virtuale su eth2 associata alla VLAN 
-9. L'interfaccia virtuale viene collegata al bridge, associando alla porta l'ID della VLAN
-10. L'interfaccia di arrivo viene associata la VLAN
-11. Anche il bridge viene assegnato alla VLAN. Questo permette di ricevere altri messaggi di autenticazione sulla stessa porta (più per debugging che per altro)  
 
-In figura seguente viene mostrato uno schema della situazione delle interfacce prima e dopo l'autenticazione di entrambi i dispositivi. Per quanto riguarda i tag e l'untag dei messaggi:
-12. Quando C2 invia il messaggi, questo viene taggato dal bridge con TAG_95
-13. Il messaggio viene poi inoltrato sulle porte con lo stesso tag
-	1. Sia eth2.95 sia il bridge stesso
-14. Quando il messaggio esce dalla porta di eth2.95, il bridge toglie il tag, visto che la porta è configurata come untag
-15. L'interfaccia virtuale inserisce di nuovo il tag e manda il messaggio taggato su eth2
-Per messaggi in arrivo il percorso è l'esatto inverso.
+1. Viene creata un'interfaccia virtuale su eth2 associata alla VLAN
+2. L'interfaccia virtuale viene collegata al bridge, associando alla porta l'ID della VLAN
+3. L'interfaccia di arrivo viene associata la VLAN
+4. Anche il bridge viene assegnato alla VLAN. Questo permette di ricevere altri messaggi di autenticazione sulla stessa porta (più per debugging che per altro)
 
+In figura seguente viene mostrato uno schema della situazione delle interfacce prima e dopo l'autenticazione di entrambi i dispositivi.
+
+Per quanto riguarda i tag e l'untag dei messaggi:
+
+1. Quando C2 invia il messaggi, questo viene taggato dal bridge con TAG_95
+2. Il messaggio viene poi inoltrato sulle porte con lo stesso tag (Sia eth2.95 sia il bridge stesso)
+3. Quando il messaggio esce dalla porta di eth2.95, il bridge toglie il tag, visto che la porta è configurata come untag
+4. L'interfaccia virtuale inserisce di nuovo il tag e manda il messaggio taggato su eth2
+   Per messaggi in arrivo il percorso è l'esatto inverso.
 
 ![My Image](images/Bridge.png)
 
 I comandi di attivazione del traffico si possono dividere come segue:
+
 1. Viene abilitato il forward per tutto il traffico proveniente dal dispositivo, ad eccezione di quello destinato all'indirizzo di default usato per i messaggi EAP: questo permette di evitare il forward dei messaggi di autenticazione che provengono da quel dispositivo sulle altre interfacce della VLAN
 2. Viene abilitato il traffico sull'interfaccia taggata, in modo da permettere il traffico di ritorno
 3. Viene bloccato il traffico di output sull'interfaccia taggata con destinazione il MAC di default per i messaggi EAP
-In questo modo tutti i messaggi vengono inoltrati su eth2 tranne quelli per l'autenticazione che si fermano nello switch.
+   In questo modo tutti i messaggi vengono inoltrati su eth2 tranne quelli per l'autenticazione che si fermano nello switch.
